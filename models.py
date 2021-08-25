@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 # Neural Network Model
 #  Input Layer: 512^2 neurons (512 x 512)
 #  Hidden Layer1: 128 neurons
@@ -44,3 +45,39 @@ def build_cnn_model():
     ])
 
     return cnn_model
+
+
+def Alexnet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']):
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
+                               input_shape=(dim, dim, 3)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(4096, activation=activation),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(4096, activation=activation),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(2, activation='softmax')
+    ])
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    return model
+
+def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']):
+    model = tf.keras.models.Sequential([
+
+    ])
+
+    return model
+

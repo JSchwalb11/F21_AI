@@ -17,6 +17,7 @@ from time import time as now
 import argparse
 import keras
 
+import models
 
 
 def slice(images):
@@ -62,10 +63,11 @@ if __name__ == '__main__':
                         help='Keep true unless working on a machine with large memory (75gb+)')
     args = parser.parse_args()
 
-    train_file = open("train_data", 'rb')
-    test_file = open("test_data", 'rb')
+    #train_file = open("train_data", 'rb')
+    #test_file = open("test_data", 'rb')
+    data_file = open("data.pkl", 'rb')
 
-    images = pickle.load(test_file)
+    images = pickle.load(data_file)
     images = np.asarray(images)
     print("Images.shape: {0}".format(images.shape))
 
@@ -93,8 +95,9 @@ if __name__ == '__main__':
 
     flip_x = [False, True]
     flip_y = [False, True]
-    rotate = [0, 90, 180, 270]
+    #rotate = [0, 90, 180, 270]
     #rotate = [0, 90]
+    rotate = [0]
 
     permutations = len(flip_x) * len(flip_y) * len(rotate)
 
@@ -108,12 +111,12 @@ if __name__ == '__main__':
                     offset = i_j + i_k + i_r
                     start = i * permutations
                     end = start + offset
-                    print("start + offset = {0} + {1}".format(start, offset))
-                    print("aug_images.shape[0] = {0}".format(aug_images.shape[0]))
+                    #print("start + offset = {0} + {1}".format(start, offset))
+                    #print("aug_images.shape[0] = {0}".format(aug_images.shape[0]))
                     aug_images[start + offset] = data_augmentation.transform(image, flip_x=j, flip_y=k, rotate=r)
                     #print("Transform params:\nflip_x {0}\n flip_y {1}\n rotation {2}\n".format(j,k,r))
 
-    aug_labels[len(aug_images)//2:] = 1
+    aug_labels[:len(aug_images)//2] = 1
 
     # create model
 
@@ -123,73 +126,29 @@ if __name__ == '__main__':
         dim = 512
 
     train_images, test_images, train_labels, test_labels = train_test_split( \
-        aug_images[:, :dim, :dim], aug_labels, test_size=0.15, random_state=22)
+        aug_images[:, :dim, :dim], aug_labels, test_size=0.25, random_state=33)
     train_labels = to_categorical(train_labels)
     test_labels = to_categorical(test_labels)
 
-    """
-    for i in range(0, EPOCHS):
-        print("Starting epoch {0}".format(i))
-        print("Shapes...\ntrain_labels {0}\n train_images {1}\n".format(train_labels.shape, train_images.shape))
-        p = np.random.permutation(len(train_images))
-        model.fit(train_images[p], train_labels, batch_size=BATCH_SIZE, epochs=1)
-        f1_score = f1_score(test_labels, model.predict(test_images))
-    """
     X, y = train_images, train_labels
 
-    model = keras.models.Sequential([
-    tf.keras.layers.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu', input_shape=(dim,dim,3)),
-    tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-    tf.keras.layers.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same"),
-    tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-    tf.keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-    tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-    tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-    tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(4096, activation='relu'),
-    tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(4096, activation='relu'),
-    tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(2, activation='softmax')
-    ])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model = models.Alexnet(dim=dim)
 
-    """
-    # define model
-    model = Sequential()
-    model.add(Conv2D(64, kernel_size=3, activation='relu', input_shape = (dim, dim, 3)))
-    model.add(Conv2D(32, kernel_size=3, activation='relu'))
-    model.add(Flatten())
-    model.add(Dense(2, activation='softmax'))
-    """
-    # fit model
-
-    """
-    
-    for i in range(0, EPOCHS):
-        p = np.random.permutation(len(train_images))
-        lap = now() - start
-        history = model.fit(X[p], y, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=1)
-        print("completed training in %.3f" % (now()-lap))
-    """
     BATCH_SIZE = 20
-    EPOCHS = 500
+    EPOCHS = 30
 
     p = np.random.permutation(len(train_images))
-    start = now()
-    history = model.fit(X, y, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
-    print("Total training time in %.3f" % (now() - start))
+    with tf.device("/device:cpu:0"):
 
-    # evaluate the model
-    _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
-    _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
-    print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
+        start = now()
+        history = model.fit(X, y, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
+        print("Total training time in %.3f" % (now() - start))
+
+        # evaluate the model
+    with tf.device("/device:cpu:0"):
+        _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
+        _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
+        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
 
     # plot loss during training
     pyplot.subplot(211)

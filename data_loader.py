@@ -12,21 +12,13 @@ def get_train_data(dir_path):
     images = []
 
     for root, dirs, files in os.walk(dir_path, topdown=False):
-        for name in files:
-            fp = root + '/' + name
-            image = np.asarray(resize(fp, ratio=0.5))
-            images.append(image)
-
-    return images
-
-def get_test_data(dir_path):
-    images = []
-
-    for root, dirs, files in os.walk(dir_path, topdown=False):
-        for name in files:
-            fp = root + '/' + name
-            image = np.asarray(resize(fp, ratio=0.5))
-            images.append(image)
+        for d in dirs:
+            dir1_path = root + '/' + d
+            for root1, dirs1, files1 in os.walk(dir1_path, topdown=False):
+                for name in files1:
+                    fp = root + '/' + d + '/' + name
+                    image = np.asarray(resize(fp, ratio=0.5))
+                    images.append(image)
 
     return images
 
@@ -36,19 +28,10 @@ def resize(image_file_path, ratio):
     return img_resized
 
 if __name__ == '__main__':
-    train_fp = "C:\Data\Snapshots"
-    test_fp = "C:\Data\Hostage Dataset"
+    data_dir = "C:\Data\Latest"
+    data_pickle = "data.pkl"
 
-    train_pickle = "train_data"
-    test_pickle = "test_data"
+    data_outfile = open(data_pickle, 'wb')
+    train_images = get_train_data(dir_path=data_dir)
 
-    train_outfile = open(train_pickle, 'wb')
-    test_outfile = open(test_pickle, 'wb')
-
-
-
-    train_images = get_train_data(dir_path=train_fp)
-    test_images = get_test_data(dir_path=test_fp)
-
-    pickle.dump(train_images, train_outfile)
-    pickle.dump(test_images, test_outfile)
+    pickle.dump(train_images, data_outfile)
