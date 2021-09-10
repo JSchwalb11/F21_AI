@@ -7,6 +7,9 @@ import data_augmentation
 import feature_extraction
 import time
 
+import image_ops
+
+
 def get_train_data(dir_path):
     """
 
@@ -44,6 +47,7 @@ def get_edge_data(img_arr):
 
 if __name__ == '__main__':
     data_dir = "C:\Data\Latest"
+    input_type = 'b/w'
 
     aug_data_pickle = "aug_data.pkl"
     aug_labels_pickle = "aug_labels.pkl"
@@ -52,7 +56,12 @@ if __name__ == '__main__':
     aug_labels_outfile = open(aug_labels_pickle, 'wb')
 
     train_images = np.asarray(get_train_data(dir_path=data_dir))
-    aug_images = data_augmentation.flip_rotate(train_images, rotate=[0])
+    if input_type == 'rgb':
+        aug_images = data_augmentation.flip_rotate(train_images, rotate=[0], input_type=input_type)
+    else:
+        edge_extraction = image_ops.extract_edges(train_images)
+        aug_images = data_augmentation.flip_rotate(edge_extraction, rotate=[0], input_type=input_type)
+
     aug_labels = data_augmentation.generate_labels(aug_images, num_classes=4)
 
     pickle.dump(aug_images, aug_data_outfile)

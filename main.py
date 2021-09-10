@@ -1,4 +1,5 @@
 import pickle
+import sys
 
 import cv2
 import numpy as np
@@ -23,6 +24,9 @@ if __name__ == '__main__':
     aug_labels = pickle.load(aug_labels_file)
     if (len(aug_images) == len(aug_labels)):
         print("Lengths match")
+    else:
+        print("Lengths do not match, check data loader")
+        sys.exit(0)
 
     """
     1. No change
@@ -44,18 +48,25 @@ if __name__ == '__main__':
     """
     num_classes = 4
     dim = aug_images.shape[1]
+    input_type = 'b/w'
 
     train_images, test_images, train_labels, test_labels = train_test_split( \
-        aug_images[:, :dim, :dim], aug_labels, test_size=0.15, random_state=33)
+        aug_images[:, :dim, :dim], aug_labels, test_size=0.25, random_state=42)
     train_labels = to_categorical(train_labels)
     test_labels = to_categorical(test_labels)
 
+    if input_type == 'rgb':
+        model = models.Alexnet(dim=dim, num_classes=num_classes)
+    else:
+        train_images = train_images.reshape((train_images.shape[0], train_images.shape[1], train_images.shape[2], 1))
+        test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))
+        model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes)
+
     X, y = train_images, train_labels
 
-    model = models.Alexnet(dim=dim, num_classes=num_classes)
 
-    BATCH_SIZE = 30
-    EPOCHS = 5
+    BATCH_SIZE = 5
+    EPOCHS = 15
 
     p = np.random.permutation(len(train_images))
     #with tf.device("/device:cpu:0"):

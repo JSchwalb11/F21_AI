@@ -50,7 +50,7 @@ def build_cnn_model():
 def Alexnet(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
-                               input_shape=(dim, dim, 3)),
+                               input_shape=(dim, dim, 3)), # for use with rgb images
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
         tf.keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation=activation, padding="same"),
@@ -73,6 +73,34 @@ def Alexnet(dim, num_classes, activation='relu', optimizer='adam', loss='categor
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     return model
+
+def Alexnet_bw_input(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
+                               input_shape=(dim, dim, 1)), # for use with b/w images
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), activation=activation, padding="same"),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(4096, activation=activation),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(4096, activation=activation),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(num_classes, activation='softmax')
+    ])
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    return model
+
 
 def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']):
     model = tf.keras.models.Sequential([

@@ -13,8 +13,11 @@ def imSave(img, filename):
     im = PIL.Image.fromarray(img, 'RGB')
     im.save(filename + ".png", "PNG")
 
-def transform(image, flip_x = False, flip_y = False, rotate = None):
-    tmp = PIL.Image.fromarray(image, 'RGB')
+def transform(image, flip_x = False, flip_y = False, rotate = None, input_type='rgb'):
+    if input_type == 'rgb':
+        tmp = PIL.Image.fromarray(image, 'RGB')
+    else:
+        tmp = PIL.Image.fromarray(image, 'L')
 
     if flip_x == True:
         tmp = tmp.transpose(PIL.Image.FLIP_LEFT_RIGHT)
@@ -33,7 +36,7 @@ def transform(image, flip_x = False, flip_y = False, rotate = None):
 
     return np.asarray(tmp)
 
-def flip_rotate(images, rotate=[0]):
+def flip_rotate(images, rotate=[0], input_type='rgb'):
     flip_x = [False, True]
     flip_y = [False, True]
     # rotate = [0, 90, 180, 270]
@@ -42,7 +45,11 @@ def flip_rotate(images, rotate=[0]):
 
     permutations = len(flip_x) * len(flip_y) * len(rotate)
 
-    aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2], images.shape[3]),
+    if input_type =='b/w':
+        aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2]),
+                              dtype=np.uint8)
+    else:
+        aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2], images.shape[3]),
                           dtype=np.uint8)
 
     for i, image in enumerate(images):
@@ -52,7 +59,7 @@ def flip_rotate(images, rotate=[0]):
                     offset = i_j + i_k + i_r
                     start = i * permutations
                     end = start + offset
-                    aug_images[start + offset] = transform(image, flip_x=j, flip_y=k, rotate=r)
+                    aug_images[start + offset] = transform(image, flip_x=j, flip_y=k, rotate=r, input_type=input_type)
 
     return aug_images
 
