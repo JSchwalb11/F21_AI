@@ -47,7 +47,7 @@ def build_cnn_model():
     return cnn_model
 
 
-def Alexnet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']):
+def Alexnet(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
                                input_shape=(dim, dim, 3)),
@@ -68,7 +68,7 @@ def Alexnet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy'
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(4096, activation=activation),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(2, activation='softmax')
+        tf.keras.layers.Dense(num_classes, activation='softmax')
     ])
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
