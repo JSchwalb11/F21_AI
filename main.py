@@ -1,15 +1,19 @@
 import pickle
 import sys
-
 import cv2
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from tensorflow.keras.utils import to_categorical
 from time import time as now
 import argparse
+
+import image_ops
+from PIL import Image
 import models
+import data_loader
+import math
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -17,16 +21,32 @@ if __name__ == '__main__':
                         help='Keep true unless working on a machine with large memory (75gb+)')
     args = parser.parse_args()
 
+    #data_dir = "C:\\Data\\Latest"
+    #train_images = np.asarray(data_loader.get_train_data(dir_path=data_dir))
+    #img = train_images[0]
+    #status, im3 = image_ops.filter_image_contours(img)
+    #plt.imshow(im3)
+    #plt.show()
+
     aug_images_file = open("aug_data.pkl", 'rb')
     aug_labels_file = open("aug_labels.pkl", 'rb')
+    #rgb_images_file = open("rbg_data.pkl", 'rb')
 
     aug_images = pickle.load(aug_images_file)
     aug_labels = pickle.load(aug_labels_file)
+    #rgb_images = pickle.load(rgb_images_file)
     if (len(aug_images) == len(aug_labels)):
         print("Lengths match")
     else:
         print("Lengths do not match, check data loader")
         sys.exit(0)
+    fig, axs = plt.subplots(4)
+    for i, ax in enumerate(axs):
+        ax.imshow(aug_images[i])
+    #axs[0].imshow(aug_images[0])
+    #axs[1].imshow(rgb_images[0])
+
+    plt.show()
 
     """
     1. No change
@@ -45,7 +65,7 @@ if __name__ == '__main__':
     14. Rotate_270, Flip_x = True
     15. Rotate_270, Flip_y = True
     16. Rotate_270, Flip_x==Flip_y==True
-    """
+    \"""
     num_classes = 4
     dim = aug_images.shape[1]
     input_type = 'b/w'
@@ -94,5 +114,6 @@ if __name__ == '__main__':
     pyplot.plot(history.history['val_accuracy'], label='test')
     pyplot.legend()
     pyplot.show()
+    """
 
 

@@ -1,12 +1,13 @@
+import numpy
 from PIL import Image
 import os
 import numpy as np
+import pandas as pd
 import pickle
 
 import data_augmentation
 import feature_extraction
-import time
-
+import PIL
 import image_ops
 
 
@@ -45,25 +46,69 @@ def get_edge_data(img_arr):
 
     return edge_images
 
+def review(train_images):
+    return 0
+
+
 if __name__ == '__main__':
-    data_dir = "C:\Data\Latest"
-    input_type = 'b/w'
+    data_dir = "C:\\Data\\Latest"
+    save_dir = "C:\\Data\\Contours\\"
+    #input_type = 'b/w'
+    input_type = 'rgb'
 
     aug_data_pickle = "aug_data.pkl"
+    rgb_data_pickle = "rgb_data.pkl"
     aug_labels_pickle = "aug_labels.pkl"
+
 
     aug_data_outfile = open(aug_data_pickle, 'wb')
     aug_labels_outfile = open(aug_labels_pickle, 'wb')
+    rgb_data_outfile = open(rgb_data_pickle, 'wb')
 
     train_images = np.asarray(get_train_data(dir_path=data_dir))
+    #sanity_checked_images, images_for_review = review(train_images)
+
     if input_type == 'rgb':
-        aug_images = data_augmentation.flip_rotate(train_images, rotate=[0], input_type=input_type)
+        #aug_images1 = data_augmentation.flip_rotate(train_images, rotate=[0], input_type=input_type)
+        #rgb_images = data_augmentation.flip_rotate(train_images, rotate=[0], input_type=input_type)
+        aug_images, data = image_ops.filter_image_array_contours(train_images)
+        aug_labels = data_augmentation.generate_labels(aug_images, num_classes=4)
+        a = list()
+        #a = numpy.zeros((aug_images.shape[0], aug_images.shape[1], aug_images[2]), dtype=aug_images.dtype)
+        for i, image in enumerate(aug_images):
+            nan_array = np.isnan(image)
+            not_nan_array = ~ nan_array
+            arr = image[not_nan_array]
+            if len(arr) > 0:
+                arr = arr.reshape((128, 128))
+                a.append((aug_labels[i], data[i], arr))
+
+        for i, arr in enumerate(a):
+            cls, data, img = arr[0], arr[1], arr[2]
+
+            line = str(aug_labels[i]) + " " + \
+                   str(data[0]) + " " + \
+                   str(data[1]) + " " + \
+                   str(data[2]) + " " + \
+                   str(data[3])
+            filename = save_dir + "{0}\\".format(cls) + str(i)
+            PIL.Image.fromarray(img).convert("L").save(filename + ".png")
+            with open(filename + ".txt", 'w') as f:
+                f.write(line)
+                f.close()
+    """
     else:
         edge_extraction = image_ops.extract_edges(train_images)
         aug_images = data_augmentation.flip_rotate(edge_extraction, rotate=[0], input_type=input_type)
+        aug_labels = data_augmentation.generate_labels(aug_images, num_classes=4)
 
-    aug_labels = data_augmentation.generate_labels(aug_images, num_classes=4)
 
-    pickle.dump(aug_images, aug_data_outfile)
+
+
+
+    pickle.dump(a[1], aug_data_outfile)
     pickle.dump(aug_labels, aug_labels_outfile)
+
+    #pickle.dump(rgb_images, rgb_data_outfile)
     #pickle.dump(edge_images, edge_outfile)
+    """
