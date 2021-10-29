@@ -36,6 +36,45 @@ def transform(image, flip_x = False, flip_y = False, rotate = None, input_type='
 
     return np.asarray(tmp)
 
+def transform_yolo_coords(input, flip_x = False, flip_y = False, rotate = None):
+    coords = input.copy()
+    if coords.all() == None:
+        return None
+    #else:
+    #    return None
+
+    if flip_x == True:
+        coords[0] = coords[0]
+        coords[1] = 0 - coords[1]
+        coords[2] = coords[2]
+        coords[3] = 0 - coords[3]
+
+    if flip_y == True:
+        coords[0] = 0 - coords[0]
+        coords[1] = coords[1]
+        coords[2] = 0 - coords[2]
+        coords[3] = coords[3]
+
+    if rotate == 90:
+        coords[0] = 0 - coords[1]
+        coords[1] = coords[0]
+        coords[2] = 0 - coords[3]
+        coords[3] = coords[2]
+
+    elif rotate == 180:
+        coords[0] = 0 - coords[0]
+        coords[1] = 0 - coords[1]
+        coords[2] = 0 - coords[2]
+        coords[3] = 0 - coords[3]
+
+    elif rotate == 270:
+        coords[0] = coords[1]
+        coords[1] = 0 - coords[0]
+        coords[2] = coords[3]
+        coords[3] = 0 - coords[2]
+
+    return coords
+
 def flip_rotate(images, rotate=[0], input_type='rgb'):
     flip_x = [False, True]
     flip_y = [False, True]
@@ -62,6 +101,43 @@ def flip_rotate(images, rotate=[0], input_type='rgb'):
                     aug_images[start + offset] = transform(image, flip_x=j, flip_y=k, rotate=r, input_type=input_type)
 
     return aug_images
+
+def flip_rotate(images, rotate=[0], input_type='rgb', aug_yolo=False, yolo_data=None):
+    flip_x = [False, True]
+    flip_y = [False, True]
+    # rotate = [0, 90, 180, 270]
+    # rotate = [0, 90]
+    # rotate = [0]
+
+    permutations = len(flip_x) * len(flip_y) * len(rotate)
+
+    if input_type =='b/w':
+        aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2]),
+                              dtype=np.uint8)
+        aug_yolo = np.zeros((yolo_data.shape[0] * permutations, yolo_data[0].shape[0]))
+    else:
+        aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2], images.shape[3]),
+                          dtype=np.uint8)
+
+    for i, image in enumerate(images):
+        print("i: {0}".format(i))
+        for i_j, j in enumerate(flip_x):
+            for i_k, k in enumerate(flip_y):
+                for i_r, r in enumerate(rotate):
+                    offset = i_j + i_k + i_r
+                    start = i * permutations
+                    end = start + offset
+                    aug_images[start + offset] = transform(image, flip_x=j, flip_y=k, rotate=r, input_type=input_type)
+                    #aug_yolo.append(transform_yolo_coords(yolo_data[i], flip_x=j, flip_y=k, rotate=r))
+                    if yolo_data[i] is not None:
+                        a = transform_yolo_coords(yolo_data[i], flip_x=j, flip_y=k, rotate=r)
+                        aug_yolo[start + offset] = a
+                    else:
+                        continue
+                        #print("None")
+                    #print()
+
+    return aug_images, np.asarray(aug_yolo)
 
 def generate_labels(aug_images, num_classes):
     aug_labels = np.zeros(len(aug_images), dtype=np.uint8)

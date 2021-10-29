@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 # Neural Network Model
 #  Input Layer: 512^2 neurons (512 x 512)
 #  Hidden Layer1: 128 neurons
@@ -74,7 +73,10 @@ def Alexnet(dim, num_classes, activation='relu', optimizer='adam', loss='categor
 
     return model
 
-def Alexnet_bw_input(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
+def Alexnet_bw_input(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'], SHAP=False):
+    if SHAP == True:
+        tf.compat.v1.disable_v2_behavior()
+
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
                                input_shape=(dim, dim, 1)), # for use with b/w images

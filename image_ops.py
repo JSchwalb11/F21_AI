@@ -38,7 +38,7 @@ def extract_edges(numpy_img_arr):
 
     return edge_arr
 
-def filter_image_contours(idx, single_image):
+def filter_image_contours(idx, single_image, canny_edge=False, contours=False):
     im = get_canny_edge(single_image)
     im2, contours = get_contours(im, 'b/w')
     max_area = 0
@@ -64,7 +64,7 @@ def filter_image_contours(idx, single_image):
             # cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
             im3[y:y + h, x:x + w] = im2[y:y + h, x:x + w]
             #data = (x, y, w, h)
-            return im3, [x, y, w, h]
+            return im3, np.asarray([x, y, w, h])
         else:
             #fig, axs = plt.subplots(2)
             #cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
@@ -89,7 +89,7 @@ def filter_image_array_contours(image_array):
         img, data = filter_image_contours(i, single_image)
         tmp[i] = img
         img_coords.append(data)
-    return tmp, img_coords
+    return tmp, np.asarray(img_coords)
 
 if __name__ == '__main__':
     """
