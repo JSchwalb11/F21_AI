@@ -13,6 +13,14 @@ import shap
 from sklearn import tree
 from sklearn import metrics
 import graphviz
+from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
+
+
 
 
 import image_ops
@@ -21,18 +29,57 @@ import models
 import data_loader
 import math
 
+
+def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.6,0.1, dtype=np.float32), label="",
+                        color='r', axes=None, BATCH_SIZE=5, EPOCHS=30):
+    estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
+    train_scores = []
+    test_scores = []
+
+    for train_size in train_sizes:
+        print("Training {0} model".format(label))
+        X_train, X_test, y_train, y_test = train_test_split(
+            aug_images, aug_labels, train_size=train_size, random_state=42)
+        #y_train_encoded = to_categorical(y_train)
+        #y_test_encoded = to_categorical(y_test)
+
+        """if label == "Alexnet":
+            y_train = y_train_encoded
+            y_test = y_test_encoded
+            estimator.fit(X_train, y_train)#,
+                          #validation_data=(X_test, y_test), batch_size=BATCH_SIZE, epochs=EPOCHS)
+        else:"""
+        X_train = X_train.reshape((X_train.shape[0], X_train.shape[1] * X_train.shape[2]))
+        X_test = X_test.reshape((X_test.shape[0], X_test.shape[1] * X_test.shape[2]))
+
+        estimator.fit(X_train, y_train)
+
+        train_score = estimator.score(X_train, y_train) * 100
+        test_score = estimator.score(X_test, y_test) * 100
+        train_scores.append(train_score)
+        test_scores.append(test_score)
+        print("Train Score: {0}\nTest Score: {1}\n".format(train_score, test_score))
+
+
+    if axes is None:
+        _, axes= plt.subplots(2)
+
+    axes[0].plot(train_sizes, test_scores, "o-", color=color, label=label)
+    axes[1].plot(train_sizes, train_scores, "o-", color=color, label=label)
+
+    print("Training Accuracy of ", label, ": ", train_scores[-1],"%")
+    print("Testing Accuracy of ", label, ": ", test_scores[-1], "%")
+    print()
+
+    return train_scores, test_scores
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--debug',  type=bool,
                         help='Keep true unless working on a machine with large memory (75gb+)')
     args = parser.parse_args()
-
-    #data_dir = "C:\\Data\\Latest"
-    #train_images = np.asarray(data_loader.get_train_data(dir_path=data_dir))
-    #img = train_images[0]
-    #status, im3 = image_ops.filter_image_contours(img)
-    #plt.imshow(im3)
-    #plt.show()
 
     aug_data_pickle = "aug_data.pkl"
     aug_labels_pickle = "aug_labels.pkl"
@@ -50,56 +97,60 @@ if __name__ == '__main__':
     aug_images = np.asarray(aug_images)
     aug_labels = np.asarray(aug_labels)
 
-    #rgb_images = pickle.load(rgb_images_file)
     if (len(aug_images) == len(aug_labels)):
         print("Lengths match")
     else:
         print("Lengths do not match, check data loader")
         sys.exit(0)
-    #fig, axs = plt.subplots(4)
-    #for i, ax in enumerate(axs):
-    #    ax.imshow(aug_images[i])
-    #axs[0].imshow(aug_images[0])
-    #axs[1].imshow(rgb_images[0])
-
-    plt.show()
-
-    """
-    1. No change
-    2. Flip_x = True
-    3. Flip_y = True
-    4. Flip_x==Flip_y==True
-    5. Rotate_90, No flip
-    6. Rotate_90, Flip_x = True
-    7. Rotate_90, Flip_y = True
-    8. Rotate_90, Flip_x==Flip_y==True
-    9. Rotate_180, No flip
-    10. Rotate_180, Flip_x = True
-    11. Rotate_180, Flip_y = True
-    12. Rotate_180, Flip_x==Flip_y==True
-    13. Rotate_270, No flip
-    14. Rotate_270, Flip_x = True
-    15. Rotate_270, Flip_y = True
-    16. Rotate_270, Flip_x==Flip_y==True
-    """
 
     num_classes = 4
     dim = aug_images.shape[1]
     input_type = 'b/w'
+    BATCH_SIZE = 30
+    EPOCHS = 5
 
-    train_images, test_images, train_labels, test_labels = train_test_split( \
+    """train_images, test_images, train_labels, test_labels = train_test_split( \
         aug_images[:, :dim, :dim], aug_labels, test_size=0.25, random_state=42)
     train_labels = to_categorical(train_labels)
-    test_labels = to_categorical(test_labels)
+    test_labels = to_categorical(test_labels)"""
 
-    if input_type == 'rgb':
+    """if input_type == 'rgb':
         model = models.Alexnet(dim=dim, num_classes=num_classes)
     else:
         train_images = train_images.reshape((train_images.shape[0], train_images.shape[1], train_images.shape[2], 1))
-        test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))
-        model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
+        test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))"""
+        #model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
 
-    X, y = train_images, train_labels
+    X, y = aug_images, aug_labels
+
+    fig, axes = plt.subplots(1,2,figsize=(12,5))
+    classifier_labels = {
+        "SVM - Poly": (svm.SVC(kernel='poly', random_state=1), "yellow"),
+        "SVM - RBF": (svm.SVC(kernel='rbf', random_state=1), "orange"),
+        "kNN": (KNeighborsClassifier(n_neighbors=5), "purple"),
+        "Gaussian Naive Bayes": (GaussianNB(), "lime"),
+        "LDA": (LinearDiscriminantAnalysis(), "red"),
+        "DTree": (tree.DecisionTreeClassifier(), "cyan")#,
+        #"Alexnet": (models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True), "blue",
+        #            BATCH_SIZE, EPOCHS)
+    }
+    for label in classifier_labels:
+        classifier = classifier_labels[label][0]
+        color = classifier_labels[label][1]
+        train_scores, test_scores = plot_learning_curve(classifier, X, y, label=label, color=color, axes=axes)
+
+    axes[0].set_xlabel("% of Training Examples")
+    axes[0].set_ylabel("Overall Classification Accuracy")
+    axes[0].set_title('Model evaluation - cross validation accuracy (w/ reduction)')
+    axes[0].legend()
+
+    axes[1].set_xlabel("% of Training Examples")
+    axes[1].set_ylabel("Training/Recall Accuracy")
+    axes[1].set_title("Model Evaluation - Training Accuracy (w/ reduction)")
+    axes[1].legend()
+    plt.show()
+
+
     """    
     import os
     os.environ["PATH"] += os.pathsep + "C:\\Program Files\\Graphviz\\bin"
@@ -117,7 +168,7 @@ if __name__ == '__main__':
     graph.render("Detection")
     """
 
-    BATCH_SIZE = 30
+    """BATCH_SIZE = 30
     EPOCHS = 5
 
     p = np.random.permutation(len(train_images))
@@ -139,7 +190,7 @@ if __name__ == '__main__':
     with tf.device("/device:cpu:0"):
         _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
         _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
-        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
+        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))"""
 
     # plot loss during training
     """

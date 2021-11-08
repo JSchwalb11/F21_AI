@@ -26,6 +26,12 @@ def get_bw_image(im_rgb):
     ret, bw_img = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
     return bw_img
 
+def gr_to_bw(im_gr):
+    #cv2.C
+    #gray = cv2.cvtColor(im_gr, cv2.COLOR_BGR2GRAY)
+    ret, bw_img = cv2.threshold(im_gr, 127, 255, cv2.THRESH_BINARY)
+    return bw_img
+
 def get_canny_edge(im_rgb, threshold1=100, threshold2=200):
     canny = cv2.Canny(im_rgb, threshold1, threshold2)
     return canny
@@ -38,9 +44,15 @@ def extract_edges(numpy_img_arr):
 
     return edge_arr
 
-def filter_image_contours(idx, single_image, canny_edge=False, contours=False):
-    im = get_canny_edge(single_image)
-    im2, contours = get_contours(im, 'b/w')
+def filter_image_contours(idx, single_image, canny_edge=False, contours=False, input_type='rgb'):
+    if input_type == 'rgb':
+        im = get_canny_edge(single_image)
+        im2, contours = get_contours(im, input_type)
+    else:
+        #im = get_bw_image(single_image)
+        im = gr_to_bw(single_image)
+        im2, contours = get_contours(im, input_type)
+
     max_area = 0
     max_area_arg = 0
     area = lambda cnt: math.prod(cv2.boundingRect(cnt)[2:])
@@ -81,12 +93,12 @@ def filter_image_contours(idx, single_image, canny_edge=False, contours=False):
         return 1, None, None
 
 
-def filter_image_array_contours(image_array):
+def filter_image_array_contours(image_array, input_type):
     tmp = np.zeros((image_array.shape[0], image_array.shape[1], image_array.shape[2]))
     img_coords = list()
     for i, single_image in enumerate(image_array):
         print("image #{0}".format(i))
-        img, data = filter_image_contours(i, single_image)
+        img, data = filter_image_contours(i, single_image, input_type=input_type)
         tmp[i] = img
         img_coords.append(data)
     return tmp, np.asarray(img_coords)

@@ -103,6 +103,33 @@ def flip_rotate(images, rotate=[0], input_type='rgb'):
     return aug_images
 
 def flip_rotate(images, rotate=[0], input_type='rgb', aug_yolo=False, yolo_data=None):
+    """
+
+    :param images:
+    :param rotate:
+    :param input_type:
+    :param aug_yolo:
+    :param yolo_data:
+    :return:
+
+    1. No change
+    2. Flip_x = True
+    3. Flip_y = True
+    4. Flip_x==Flip_y==True
+    5. Rotate_90, No flip
+    6. Rotate_90, Flip_x = True
+    7. Rotate_90, Flip_y = True
+    8. Rotate_90, Flip_x==Flip_y==True
+    9. Rotate_180, No flip
+    10. Rotate_180, Flip_x = True
+    11. Rotate_180, Flip_y = True
+    12. Rotate_180, Flip_x==Flip_y==True
+    13. Rotate_270, No flip
+    14. Rotate_270, Flip_x = True
+    15. Rotate_270, Flip_y = True
+    16. Rotate_270, Flip_x==Flip_y==True
+    """
+
     flip_x = [False, True]
     flip_y = [False, True]
     # rotate = [0, 90, 180, 270]
