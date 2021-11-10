@@ -31,7 +31,7 @@ import math
 
 
 def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.6,0.1, dtype=np.float32), label="",
-                        color='r', axes=None, BATCH_SIZE=5, EPOCHS=30):
+                        color='r', axes=None):
     estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
     train_scores = []
     test_scores = []
@@ -39,7 +39,7 @@ def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.
     for train_size in train_sizes:
         print("Training {0} model".format(label))
         X_train, X_test, y_train, y_test = train_test_split(
-            aug_images, aug_labels, train_size=train_size, random_state=42)
+            X, y, train_size=train_size, random_state=42)
         #y_train_encoded = to_categorical(y_train)
         #y_test_encoded = to_categorical(y_test)
 
@@ -70,6 +70,46 @@ def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.
     print("Training Accuracy of ", label, ": ", train_scores[-1],"%")
     print("Testing Accuracy of ", label, ": ", test_scores[-1], "%")
     print()
+
+    return train_scores, test_scores
+
+def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None):
+    images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
+    train_scores = []
+    test_scores = []
+
+    for train_size in train_sizes:
+        train_images, test_images, train_labels, test_labels = train_test_split(
+                images, labels, train_size=train_size, random_state=42)
+        train_labels = to_categorical(train_labels)
+        test_labels = to_categorical(test_labels)
+        #train_images = train_images.reshape((train_images.shape[0], train_images.shape[1], train_images.shape[2], 1))
+        #test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))
+
+        model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
+
+        start = now()
+        history = model.fit(train_images, train_labels, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
+        print("Total training time in %.3f" % (now() - start))
+
+        #background = images[np.random.choice(images.shape[0], 100, replace=False)]
+        #explainer = shap.DeepExplainer(model, background)
+        #shap_values = explainer.shap_values(test_images[0:4])
+        #shap.image_plot(shap_values, -test_images[0:4])
+
+        with tf.device("/device:cpu:0"):
+            _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
+
+            _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
+            train_scores.append(train_acc * 100)
+            test_scores.append(test_acc * 100)
+            print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
+
+    if axes is None:
+        _, axes = plt.subplots(2)
+
+    axes[0].plot(train_sizes, test_scores, "o-", color=color, label=label)
+    axes[1].plot(train_sizes, train_scores, "o-", color=color, label=label)
 
     return train_scores, test_scores
 
@@ -107,20 +147,20 @@ if __name__ == '__main__':
     dim = aug_images.shape[1]
     input_type = 'b/w'
     BATCH_SIZE = 30
-    EPOCHS = 5
+    EPOCHS = 15
 
-    """train_images, test_images, train_labels, test_labels = train_test_split( \
+    train_images, test_images, train_labels, test_labels = train_test_split( \
         aug_images[:, :dim, :dim], aug_labels, test_size=0.25, random_state=42)
     train_labels = to_categorical(train_labels)
-    test_labels = to_categorical(test_labels)"""
+    test_labels = to_categorical(test_labels)
 
     """if input_type == 'rgb':
         model = models.Alexnet(dim=dim, num_classes=num_classes)
     else:
         train_images = train_images.reshape((train_images.shape[0], train_images.shape[1], train_images.shape[2], 1))
-        test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))"""
+        test_images = test_images.reshape((test_images.shape[0], test_images.shape[1], test_images.shape[2], 1))
         #model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
-
+    """
     X, y = aug_images, aug_labels
 
     fig, axes = plt.subplots(1,2,figsize=(12,5))
@@ -139,14 +179,25 @@ if __name__ == '__main__':
         color = classifier_labels[label][1]
         train_scores, test_scores = plot_learning_curve(classifier, X, y, label=label, color=color, axes=axes)
 
+    cnn_train_scores, cnn_test_scores = plot_cnn_learning_curve(images=X,
+                                                                labels=y,
+                                                                dim=dim,
+                                                                num_classes=num_classes,
+                                                                BATCH_SIZE=BATCH_SIZE,
+                                                                EPOCHS=EPOCHS,
+                                                                label="Alexnet (B: {0}/E: {1}".format(BATCH_SIZE, EPOCHS),
+                                                                axes=axes,
+                                                                color='olive')
+
+
     axes[0].set_xlabel("% of Training Examples")
     axes[0].set_ylabel("Overall Classification Accuracy")
-    axes[0].set_title('Model evaluation - cross validation accuracy (w/ reduction)')
+    axes[0].set_title('Model evaluation - Validation accuracy')
     axes[0].legend()
 
     axes[1].set_xlabel("% of Training Examples")
     axes[1].set_ylabel("Training/Recall Accuracy")
-    axes[1].set_title("Model Evaluation - Training Accuracy (w/ reduction)")
+    axes[1].set_title("Model Evaluation - Training Accuracy")
     axes[1].legend()
     plt.show()
 
@@ -167,33 +218,33 @@ if __name__ == '__main__':
     graph = graphviz.Source(dot_data)
     graph.render("Detection")
     """
-
-    """BATCH_SIZE = 30
-    EPOCHS = 5
+    """model = models.Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
+    BATCH_SIZE = 30
+    EPOCHS = 15
+    train_scores = []
+    test_scores = []
+    train_sizes = np.arange(0.1, 0.6, 0.1)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     p = np.random.permutation(len(train_images))
     #with tf.device("/device:cpu:0"):
+    cnn_train_scores, cnn_test_scores = plot_cnn_learning_curve(images=X, labels=y, dim=dim,
+                                                                num_classes=num_classes, BATCH_SIZE=BATCH_SIZE,
+                                                                EPOCHS=EPOCHS, label="Alexnet", axes=axes,
+                                                                color='olive')
 
-    start = now()
-    history = model.fit(X, y, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
-    print("Total training time in %.3f" % (now() - start))
+    axes[0].set_xlabel("% of Training Examples")
+    axes[0].set_ylabel("Overall Classification Accuracy")
+    axes[0].set_title('Model evaluation - validation accuracy')
+    axes[0].legend()
 
-    #explainer = shap.explainers(history)
-    background = X[np.random.choice(X.shape[0], 100, replace=False)]
-    explainer = shap.DeepExplainer(model, background)
-    shap_values = explainer.shap_values(test_images[0:4])
-    shap.image_plot(shap_values, -test_images[0:4])
-    #shap_values = explainer(X)
-    #shap.plots.waterfall(shap_values[0])
+    axes[1].set_xlabel("% of Training Examples")
+    axes[1].set_ylabel("Training/Recall Accuracy")
+    axes[1].set_title("Model Evaluation - Training Accuracy")
+    axes[1].legend()
+    plt.show()"""
 
-    # evaluate the model
-    with tf.device("/device:cpu:0"):
-        _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
-        _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
-        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))"""
-
-    # plot loss during training
-    """
+    """# plot loss during training
     plt.subplot(211)
     plt.title('Loss')
     plt.plot(history.history['loss'], label='train')
@@ -205,6 +256,6 @@ if __name__ == '__main__':
     plt.plot(history.history['accuracy'], label='train')
     plt.plot(history.history['val_accuracy'], label='test')
     plt.legend()
-    plt.show()
-    """
+    plt.show()"""
+
 

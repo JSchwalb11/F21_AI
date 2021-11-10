@@ -122,7 +122,7 @@ def pca_reduced_images(train_images):
 
 if __name__ == '__main__':
     data_dir = "C:\\Data\\Latest"
-    test_data_dir = "C:\\Data\\TestingDir"
+    #test_data_dir = "C:\\Data\\TestingDir"
     #data_dir = "C:\\Data\\Latest - Old"
     contour_save_dir = "C:\\Data\\Contours\\"
     pca_save_dir = "C:\\Data\\PCA\\"
@@ -137,7 +137,7 @@ if __name__ == '__main__':
 
 
 
-    train_images = np.asarray(get_train_data(dir_path=test_data_dir))
+    train_images = np.asarray(get_train_data(dir_path=data_dir))
     rgb_images = train_images
 
     new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, save_dir=contour_save_dir, input_type='rgb')
