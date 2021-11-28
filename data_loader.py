@@ -144,6 +144,7 @@ if __name__ == '__main__':
     #reduced_train_images = pca_reduced_images(train_images)
     #new_images, new_labels, new_yolo_labels = retrieve_contoured_images(reduced_train_images, save_dir=contour_save_dir, input_type=input_type)
 
+    """
     aug_data_outfile = open(aug_data_pickle, 'wb')
     aug_labels_outfile = open(aug_labels_pickle, 'wb')
     rgb_data_outfile = open(rgb_data_pickle, 'wb')
@@ -153,4 +154,5 @@ if __name__ == '__main__':
     pickle.dump(new_labels, aug_labels_outfile)
     pickle.dump(new_yolo_labels, yolo_labels_outfile)
     pickle.dump(rgb_images, rgb_data_outfile)
+    """
     #pickle.dump(edge_images, edge_outfile)

@@ -47,7 +47,9 @@ def extract_edges(numpy_img_arr):
 def filter_image_contours(idx, single_image, canny_edge=False, contours=False, input_type='rgb'):
     if input_type == 'rgb':
         im = get_canny_edge(single_image)
+        plt.imshow(im)
         im2, contours = get_contours(im, input_type)
+        plt.imshow(im)
     else:
         #im = get_bw_image(single_image)
         im = gr_to_bw(single_image)
@@ -78,11 +80,12 @@ def filter_image_contours(idx, single_image, canny_edge=False, contours=False, i
             #data = (x, y, w, h)
             return im3, np.asarray([x, y, w, h])
         else:
-            #fig, axs = plt.subplots(2)
-            #cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
-            #axs[0].imshow(im2)
-            #axs[1].imshow(im3)
-            #plt.show()
+            fig, axs = plt.subplots(nrows=1, ncols=2)
+            cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
+            im3[y:y + h, x:x + w] = im2[y:y + h, x:x + w]
+            axs[0].imshow(im2)
+            axs[1].imshow(im3)
+            plt.show()
             #print("Found something weird")
             #print("x: {0}\ny: {1}\nw: {2}\nh: {3}\n".format(x,y,w,h))
             return None, None
@@ -104,7 +107,6 @@ def filter_image_array_contours(image_array, input_type):
     return tmp, np.asarray(img_coords)
 
 if __name__ == '__main__':
-    """
     import pickle
     import sys
     from matplotlib import pyplot as plt
@@ -116,12 +118,14 @@ if __name__ == '__main__':
     aug_images = pickle.load(aug_images_file)
     aug_labels = pickle.load(aug_labels_file)
 
+    """
     if (len(aug_images) == len(aug_labels)):
         print("Lengths match")
     else:
         print("Lengths do not match, check data loader")
         sys.exit(0)
-
+    """
+    """
     num_classes = 4
     slice = len(aug_images) // num_classes
     im = aug_images[slice*1+1000]
@@ -130,13 +134,48 @@ if __name__ == '__main__':
     edges = cv2.Canny(im, 100, 200)
     bw_edges = cv2.Canny(im_bw, 100, 200)
     plt.figure(1)
+    """
+    #fig, axes = plt.subplots(nrows=4, ncols=3, sharey=True)
 
-    plt.subplot(211)
-    plt.imshow(edges, cmap='gray')
-    plt.subplot(212)
-    plt.imshow(bw_edges, cmap='gray')
+    imgs = np.asarray( [aug_images[1], aug_images[10500], aug_images[13200], aug_images[17573]] , dtype=np.uint8)
+    input_type = 'b/w'
+    fig, axes = plt.subplots(nrows=len(imgs), ncols=2)
+    axes[0][0].set_title("Before Filtering")
+    axes[0][1].set_title("After Filtering")
+    contoured_imgs, data = filter_image_array_contours(imgs, input_type=input_type)
+    for i, im in enumerate(imgs):
+        axes[i][0].imshow(im)
+        axes[i][1].imshow(contoured_imgs[i])
+
+        #axes[i][0].imshow(im)
+        #axes[i][1].imshow(im3)
+
+    fig.suptitle("Contour Selection")
+    plt.savefig("Contour Selection")
+        #axes[i][0].imshow(im)
+
+
+        #im_canny = get_canny_edge(im)
+        #axes[i][1].imshow(im_canny)
+
+
+        #im_bw = get_bw_image(im)
+        #im_contour = get_contours(im_bw, input_type='b/w')
+        #axes[i][2].imshow(im_contour[0])
+
+    """
+    axes[0][0].set_title("Original")
+    axes[0][1].set_title("get_canny_edge")
+    axes[0][2].set_title("get_contours")
+    fig.suptitle("Preprocessing Images")
+    plt.savefig("Preprocessing_Images")
+    """
+
+    #plt.subplot(211)
+    #plt.imshow(edges, cmap='gray')
+    #plt.subplot(212)
+    #plt.imshow(bw_edges, cmap='gray')
     #plt.imshow(im_contour, cmap='gray')
     #plt.subplot(221)
     #plt.imshow(edges, cmap='gray')
-    plt.show()
-    """
+    #plt.show()

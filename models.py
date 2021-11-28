@@ -1,4 +1,12 @@
 import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from time import time as now
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
+from matplotlib import pyplot as plt
+import numpy as np
+import shap
 
 # Neural Network Model
 #  Input Layer: 512^2 neurons (512 x 512)
@@ -47,6 +55,7 @@ def build_cnn_model():
 
 
 def Alexnet(dim, num_classes, activation='relu', optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
+
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
                                input_shape=(dim, dim, 3)), # for use with rgb images
@@ -111,3 +120,76 @@ def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy
 
     return model
 
+def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None):
+    #images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
+    train_scores = []
+    test_scores = []
+
+    for train_size in train_sizes:
+        train_images, test_images, train_labels, test_labels = train_test_split(
+                images, labels, train_size=train_size, random_state=42)
+        train_labels = to_categorical(train_labels)
+        test_labels = to_categorical(test_labels)
+
+        #model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
+        model = Alexnet(dim=dim, num_classes=num_classes)
+
+        start = now()
+        history = model.fit(train_images, train_labels, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
+        print("Total training time in %.3f" % (now() - start))
+
+        #background = images[np.random.choice(images.shape[0], 100, replace=False)]
+        #explainer = shap.DeepExplainer(model, background)
+        #shap_values = explainer.shap_values(test_images[0:4])
+        #shap.image_plot(shap_values, -test_images[0:4])
+        #plt.savefig("Shap Analysis")
+
+        with tf.device("/device:cpu:0"):
+            _, train_acc = model.evaluate(train_images, train_labels, verbose=0)
+
+            _, test_acc = model.evaluate(test_images, test_labels, verbose=0)
+            train_scores.append(train_acc * 100)
+            test_scores.append(test_acc * 100)
+            print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
+
+    if axes is None:
+        _, axes = plt.subplots(2)
+
+    axes[0].plot(train_sizes, test_scores, "o-", color=color, label=label)
+    axes[1].plot(train_sizes, train_scores, "o-", color=color, label=label)
+
+    return train_scores, test_scores
+
+def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.6,0.1, dtype=np.float32), label="",
+                        color='r', axes=None):
+    estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
+    train_scores = []
+    test_scores = []
+
+    for train_size in train_sizes:
+        print("Training {0} model".format(label))
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, train_size=train_size, random_state=42)
+
+        X_train = X_train.reshape((X_train.shape[0], X_train.shape[1] * X_train.shape[2]))
+        X_test = X_test.reshape((X_test.shape[0], X_test.shape[1] * X_test.shape[2]))
+
+        estimator.fit(X_train, y_train)
+
+        train_score = estimator.score(X_train, y_train) * 100
+        test_score = estimator.score(X_test, y_test) * 100
+        train_scores.append(train_score)
+        test_scores.append(test_score)
+        print("Train Score: {0}\nTest Score: {1}\n".format(train_score, test_score))
+
+    if axes is None:
+        _, axes = plt.subplots(2)
+
+    axes[0].plot(train_sizes, test_scores, "o-", color=color, label=label)
+    axes[1].plot(train_sizes, train_scores, "o-", color=color, label=label)
+
+    print("Training Accuracy of ", label, ": ", train_scores[-1],"%")
+    print("Testing Accuracy of ", label, ": ", test_scores[-1], "%")
+    print()
+
+    return train_scores, test_scores
