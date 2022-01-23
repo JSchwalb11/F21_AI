@@ -7,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from matplotlib import pyplot as plt
 import numpy as np
 import shap
+import sys
 
 # Neural Network Model
 #  Input Layer: 512^2 neurons (512 x 512)
@@ -88,7 +89,7 @@ def Alexnet_bw_input(dim, num_classes, activation='relu', optimizer='adam', loss
 
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation=activation,
-                               input_shape=(dim, dim, 1)), # for use with b/w images
+                               input_shape=(dim, dim, 1)),# for use with b/w images
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2)),
         tf.keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation=activation, padding="same"),
@@ -121,7 +122,7 @@ def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy
     return model
 
 def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None):
-    #images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
+    images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
     train_scores = []
     test_scores = []
 
@@ -131,8 +132,12 @@ def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS
         train_labels = to_categorical(train_labels)
         test_labels = to_categorical(test_labels)
 
-        #model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=True)
-        model = Alexnet(dim=dim, num_classes=num_classes)
+        print("Train size {0} images".format(len(train_images)))
+        print("Train size {0} bytes".format(sys.getsizeof(train_images)))
+        print("Test size {0} images".format(len(test_images)))
+        print("Test size {0} bytes".format(sys.getsizeof(test_images)))
+        model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=False)
+        #model = Alexnet(dim=dim, num_classes=num_classes)
 
         start = now()
         history = model.fit(train_images, train_labels, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)

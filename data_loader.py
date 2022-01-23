@@ -53,11 +53,11 @@ def get_edge_data(img_arr):
     return edge_images
 
 
-def retrieve_contoured_images(train_images, save_dir, input_type):
+def retrieve_contoured_images(train_images, save_dir, input_type, dim):
     filtered_contours, data = image_ops.filter_image_array_contours(train_images, input_type)
 
     #aug_images1, data1 = data_augmentation.flip_rotate(aug_images, rotate=[0], input_type=input_type, aug_yolo=False, yolo_data=data)
-    aug_labels = data_augmentation.generate_labels(filtered_contours, num_classes=4)
+    aug_labels = data_augmentation.generate_labels(filtered_contours, num_classes=6)
 
     new_images = list()
     new_labels = list()
@@ -72,16 +72,19 @@ def retrieve_contoured_images(train_images, save_dir, input_type):
             new_yolo_labels.append(data[i])
             new_labels.append(aug_labels[i])
 
+    new_yolo_labels = np.array(new_yolo_labels) / dim
+
     for i in range(0, len(new_images)):
         cls = new_labels[i]
         yolo_data = new_yolo_labels[i]
         img = new_images[i]
 
-        line = str(aug_labels[i]) + " " + \
-               str(data[0]) + " " + \
-               str(data[1]) + " " + \
-               str(data[2]) + " " + \
-               str(data[3])
+        line = str(cls) + " " + \
+               str(yolo_data[0]) + " " + \
+               str(yolo_data[1]) + " " + \
+               str(yolo_data[2]) + " " + \
+               str(yolo_data[3])
+
         filename = save_dir + "{0}\\".format(cls) + str(i)
         PIL.Image.fromarray(img).convert("L").save(filename + ".png")
         with open(filename + ".txt", 'w') as f:
@@ -138,21 +141,22 @@ if __name__ == '__main__':
 
 
     train_images = np.asarray(get_train_data(dir_path=data_dir))
-    rgb_images = train_images
+    #rgb_images = train_images
 
-    new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, save_dir=contour_save_dir, input_type='rgb')
+    dim = train_images.shape[1]
+
+    new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, dim=dim, save_dir=contour_save_dir, input_type='rgb')
     #reduced_train_images = pca_reduced_images(train_images)
     #new_images, new_labels, new_yolo_labels = retrieve_contoured_images(reduced_train_images, save_dir=contour_save_dir, input_type=input_type)
 
-    """
     aug_data_outfile = open(aug_data_pickle, 'wb')
     aug_labels_outfile = open(aug_labels_pickle, 'wb')
-    rgb_data_outfile = open(rgb_data_pickle, 'wb')
+    #rgb_data_outfile = open(rgb_data_pickle, 'wb')
     yolo_labels_outfile = open(yolo_labels_pickle, 'wb')
 
     pickle.dump(new_images, aug_data_outfile)
     pickle.dump(new_labels, aug_labels_outfile)
     pickle.dump(new_yolo_labels, yolo_labels_outfile)
-    pickle.dump(rgb_images, rgb_data_outfile)
-    """
+    #pickle.dump(rgb_images, rgb_data_outfile)
+
     #pickle.dump(edge_images, edge_outfile)

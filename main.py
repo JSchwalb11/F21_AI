@@ -2,6 +2,7 @@ import pickle
 import sys
 import cv2
 import numpy as np
+from PIL import Image
 import tensorflow as tf
 from pygments.lexers import graphviz
 from sklearn.model_selection import train_test_split
@@ -12,12 +13,21 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.preprocessing import MinMaxScaler
+
 import models
 from time import time as now
 
 import xgboost as xgb
 from matplotlib.pylab import rcParams
 import pandas as pd
+
+from sklearn.model_selection import cross_val_score
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import BaggingClassifier
+from sklearn.pipeline import Pipeline
+from Prototyping import prototype
+
 
 
 if __name__ == '__main__':
@@ -29,18 +39,15 @@ if __name__ == '__main__':
     aug_data_pickle = "aug_data.pkl"
     aug_labels_pickle = "aug_labels.pkl"
     yolo_labels_pickle = "yolo_labels.pkl"
-    rgb_data_pickle = "rgb_data.pkl"
 
     aug_images_file = open(aug_data_pickle, 'rb')
     aug_labels_file = open(aug_labels_pickle, 'rb')
     yolo_labels_pickle = open(yolo_labels_pickle, 'rb')
-    rgb_images_file = open(rgb_data_pickle, 'rb')
 
 
     aug_images = pickle.load(aug_images_file)
     aug_labels = pickle.load(aug_labels_file)
     yolo_labels = pickle.load(yolo_labels_pickle)
-    rgb_images = pickle.load(rgb_images_file)
 
     aug_images = np.asarray(aug_images)
     aug_labels = np.asarray(aug_labels)
@@ -51,15 +58,78 @@ if __name__ == '__main__':
         print("Lengths do not match, check data loader")
         sys.exit(0)
 
-    num_classes = 4
+    num_classes = 6
     dim = aug_images.shape[1]
     input_type = 'b/w'
     BATCH_SIZE = 30
     EPOCHS = 15
+    max_idx = aug_images.shape[0]
 
-    X, y = aug_images, aug_labels
-    df = pd.DataFrame(aug_labels)#, columns={'Hostage', 'Trailer', 'House', 'Fountain'})
+    """c3 = aug_images[13816:max_idx-100]
+    c3_labels = aug_labels[13816:max_idx-100]
+    c3_val = aug_images[max_idx-100:]
+    c3_val_labels = aug_labels[max_idx-100:]
+
     fig, axes = plt.subplots(1,2,figsize=(12,5))
+
+    axes[0].imshow(c3[0])
+
+    proto = prototype(c3)
+    axes[1].imshow(proto)
+    plt.show()"""
+
+    """c0 = aug_images[:100]
+    c0_labels = aug_labels[:100]
+    c0_val = aug_images[100:110]
+    c0_val_labels = aug_labels[100:110]
+
+    c1 = aug_images[5521:5621]
+    c1_labels = aug_labels[5521:5621]
+    c1_val = aug_images[5621:5631]
+    c1_val_labels = aug_labels[100:110]
+
+    c2 = aug_images[9879:9979]
+    c2_labels = aug_labels[9879:9979]
+    c2_val = aug_images[9979:9989]
+    c2_val_labels = aug_labels[9979:9989]
+
+    c3 = aug_images[13816:13916]
+    c3_labels = aug_labels[13816:13916]
+    c3_val = aug_images[13916:13926]
+    c3_val_labels = aug_labels[13916:13926]
+
+    sample = np.concatenate((c0,c1,c2,c3))
+    sample_labels = np.concatenate((c0_labels,c1_labels,c2_labels,c3_labels))
+
+    c0 = c0.reshape((100, 128*128))
+    c0_val = c0_val.reshape((10, 128*128))
+    c1_val = c1_val.reshape((10, 128*128))"""
+
+    #clf = BaggingClassifier(n_estimators = 3, random_state = 0).fit(c0, c0_labels)
+    #a = clf.predict(c1_val)
+
+
+    #X, y = aug_images.reshape((aug_images.shape[0], 128*128)) , aug_labels
+    """X_train, X_test, y_train, y_test = train_test_split(
+        X, y, train_size=0.3, random_state=42)
+    classifier = BaggingClassifier(n_estimators=3, random_state=0).fit(X_train, y_train)
+
+
+    estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
+    estimator.fit(X_train, y_train)
+
+    #estimator.predict(test_images)
+
+    train_score = estimator.score(X_train, y_train) * 100
+    test_score = estimator.score(X_test, y_test) * 100"""
+
+    X, y = aug_images.reshape((aug_images.shape[0], 128, 128)) , aug_labels
+
+
+
+    fig, axes = plt.subplots(1,2,figsize=(12,5))
+
+
 
     """
     classifier_labels = {
@@ -78,11 +148,11 @@ if __name__ == '__main__':
     cnn_train_scores, cnn_test_scores = models.plot_cnn_learning_curve(images=X,
                                                                        labels=y,
                                                                        dim=dim,
-                                                                       train_sizes=np.arange(0.1, 0.6, 0.1),
+                                                                       train_sizes=np.arange(0.1, 0.7, 0.1),
                                                                        num_classes=num_classes,
                                                                        BATCH_SIZE=BATCH_SIZE,
                                                                        EPOCHS=EPOCHS,
-                                                                       label="Alexnet (B: {0} E: {1})\n(No preprocessing)".format(BATCH_SIZE,
+                                                                       label="Alexnet (B: {0} E: {1})\n".format(BATCH_SIZE,
                                                                                                               EPOCHS),
                                                                        axes=axes,
                                                                        color='b')
@@ -95,10 +165,12 @@ if __name__ == '__main__':
     axes[1].set_xlabel("% of Training Examples")
     axes[1].set_ylabel("Training/Recall Accuracy")
     axes[1].set_title("Model Evaluation - Training Accuracy")
-    fig.suptitle("Alexnet (B: {0} E: {1}) (No preprocessing)".format(BATCH_SIZE, EPOCHS))
+    fig.suptitle("Alexnet (B: {0} E: {1})".format(BATCH_SIZE, EPOCHS))
     axes[1].legend()
-    plt.savefig("Alexnet: No preprocessing (Raw RGB)")
+    plt.savefig("Alexnet: 6 classes")
     plt.show()
+
+
     """
     # Run below tonight
     colors = ['r', 'b', 'g', 'y', 'p', 'black', 'olive']

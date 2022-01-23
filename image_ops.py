@@ -3,6 +3,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 import math
 
+def coords_top_left_to_center(x_tl, y_tl, w, h):
+    x_center = x_tl + (w/2)
+    y_center = y_tl + (h/2)
+    return x_center, y_center
+
 def get_contours(im, input_type):
     if input_type != 'b/w':
         bw_img = get_bw_image(im)
@@ -19,6 +24,14 @@ def get_contours(im, input_type):
     #cv2.imshow('img', im)
     #cv2.waitKey(0)
     return im, contours
+
+def pil_to_cv(pil_image):
+    """
+    Returns a copy of an image in a representation suited for OpenCV
+    :param pil_image: PIL.Image object
+    :return: Numpy array compatible with OpenCV
+    """
+    return np.array(pil_image)
 
 def get_bw_image(im_rgb):
     im_bgr = cv2.cvtColor(im_rgb, cv2.COLOR_RGB2BGR)
@@ -44,7 +57,7 @@ def extract_edges(numpy_img_arr):
 
     return edge_arr
 
-def filter_image_contours(idx, single_image, canny_edge=False, contours=False, input_type='rgb'):
+def filter_image_contours(idx, single_image, canny_edge=False, contours=False, input_type='rgb', heuristics=True):
     if input_type == 'rgb':
         im = get_canny_edge(single_image)
         plt.imshow(im)
@@ -71,21 +84,31 @@ def filter_image_contours(idx, single_image, canny_edge=False, contours=False, i
         object_of_interest = contours[max_area_arg]
         x, y, w, h = cv2.boundingRect(object_of_interest)
         im3 = np.zeros((im2.shape[0], im2.shape[1]), dtype=np.uint8)
+        if heuristics == False:
+            return im2, np.asarray([x, y, w, h])
+
         if max_area > 512 and w < 128:
             object_of_interest = contours[max_area_arg]
             x, y, w, h = cv2.boundingRect(object_of_interest)
+            if x == 0:
+                x = x + 1
+            if y == 0:
+                y = y + 1
             # print("x: {0}\ny: {1}\nw: {2}\nh: {3}\n".format(x,y,w,h))
             # cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
             im3[y:y + h, x:x + w] = im2[y:y + h, x:x + w]
+            x_center, y_center = coords_top_left_to_center(x, y, w, h)
             #data = (x, y, w, h)
-            return im3, np.asarray([x, y, w, h])
+            if x == 0 or y == 0:
+                print()
+            return im3, np.asarray([x_center, y_center, w, h])
         else:
-            fig, axs = plt.subplots(nrows=1, ncols=2)
+            """fig, axs = plt.subplots(nrows=1, ncols=2)
             cv2.rectangle(im3, (x, y), (x + w, y + h), (200, 0, 0), 2)
             im3[y:y + h, x:x + w] = im2[y:y + h, x:x + w]
             axs[0].imshow(im2)
             axs[1].imshow(im3)
-            plt.show()
+            plt.show()"""
             #print("Found something weird")
             #print("x: {0}\ny: {1}\nw: {2}\nh: {3}\n".format(x,y,w,h))
             return None, None
@@ -93,7 +116,8 @@ def filter_image_contours(idx, single_image, canny_edge=False, contours=False, i
 
     else:
         print("Flag image {0} for review".format(idx))
-        return 1, None, None
+        #plt.show()
+        return None, None
 
 
 def filter_image_array_contours(image_array, input_type):
@@ -110,6 +134,14 @@ if __name__ == '__main__':
     import pickle
     import sys
     from matplotlib import pyplot as plt
+
+    x = -2
+    y = 4
+    w = 10
+    h = 6
+
+    x_c, y_c = coords_top_left_to_center(x,y,w,h)
+    print()
 
 
     aug_images_file = open("aug_data.pkl", 'rb')
@@ -139,18 +171,23 @@ if __name__ == '__main__':
 
     imgs = np.asarray( [aug_images[1], aug_images[10500], aug_images[13200], aug_images[17573]] , dtype=np.uint8)
     input_type = 'b/w'
-    fig, axes = plt.subplots(nrows=len(imgs), ncols=2)
+    fig, axes = plt.subplots(nrows=len(imgs), ncols=3)
     axes[0][0].set_title("Before Filtering")
     axes[0][1].set_title("After Filtering")
+    axes[0][2].set_title("Centroid")
     contoured_imgs, data = filter_image_array_contours(imgs, input_type=input_type)
     for i, im in enumerate(imgs):
         axes[i][0].imshow(im)
         axes[i][1].imshow(contoured_imgs[i])
 
-        #axes[i][0].imshow(im)
-        #axes[i][1].imshow(im3)
+        x,y,w,h = data[i][0], data[i][1], data[i][2], data[i][3]
+        x_center, y_center = coords_top_left_to_center(x,y,w,h)
+        axes[i][2].plot(x_center, y_center, marker="o", markeredgecolor="red", markerfacecolor="green")
+        cv2.rectangle(contoured_imgs[i], (x, y), (x + w, y + h), (200, 0, 0), 2)
+        axes[i][2].imshow(contoured_imgs[i])
 
     fig.suptitle("Contour Selection")
+    plt.show()
     plt.savefig("Contour Selection")
         #axes[i][0].imshow(im)
 
