@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import shap
 import sys
+from wandb.keras import WandbCallback
 
 # Neural Network Model
 #  Input Layer: 512^2 neurons (512 x 512)
@@ -121,7 +122,7 @@ def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy
 
     return model
 
-def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None):
+def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, wandb, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None):
     images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
     train_scores = []
     test_scores = []
@@ -137,10 +138,12 @@ def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS
         print("Test size {0} images".format(len(test_images)))
         print("Test size {0} bytes".format(sys.getsizeof(test_images)))
         model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=False)
+
         #model = Alexnet(dim=dim, num_classes=num_classes)
 
         start = now()
-        history = model.fit(train_images, train_labels, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=EPOCHS)
+        history = model.fit(train_images, train_labels, validation_data=(test_images, test_labels),
+                            batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[WandbCallback()])
         print("Total training time in %.3f" % (now() - start))
 
         #background = images[np.random.choice(images.shape[0], 100, replace=False)]
@@ -166,7 +169,7 @@ def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS
     return train_scores, test_scores
 
 def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.6,0.1, dtype=np.float32), label="",
-                        color='r', axes=None):
+                        color='r', axes=None, datatype=None):
     estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
     train_scores = []
     test_scores = []
@@ -189,6 +192,7 @@ def plot_learning_curve(classifier, X, y, steps=10, train_sizes=np.arange(0.1,0.
 
     if axes is None:
         _, axes = plt.subplots(2)
+
 
     axes[0].plot(train_sizes, test_scores, "o-", color=color, label=label)
     axes[1].plot(train_sizes, train_scores, "o-", color=color, label=label)

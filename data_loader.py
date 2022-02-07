@@ -53,11 +53,11 @@ def get_edge_data(img_arr):
     return edge_images
 
 
-def retrieve_contoured_images(train_images, save_dir, input_type, dim):
+def retrieve_contoured_images(train_images, save_dir, input_type, dim, num_classes):
     filtered_contours, data = image_ops.filter_image_array_contours(train_images, input_type)
 
     #aug_images1, data1 = data_augmentation.flip_rotate(aug_images, rotate=[0], input_type=input_type, aug_yolo=False, yolo_data=data)
-    aug_labels = data_augmentation.generate_labels(filtered_contours, num_classes=6)
+    aug_labels = data_augmentation.generate_labels(filtered_contours, num_classes=num_classes)
 
     new_images = list()
     new_labels = list()
@@ -93,34 +93,7 @@ def retrieve_contoured_images(train_images, save_dir, input_type, dim):
 
     return new_images, new_labels, new_yolo_labels
 
-def pca_reduced_images(train_images):
-    new_images = list()
-    new_labels = list()
-    new_yolo_labels = list()
 
-    b_w_train_images = np.zeros((train_images.shape[0], train_images.shape[1], train_images.shape[2]))
-    for i, image in enumerate(train_images):
-        rgb_img = PIL.Image.fromarray(image)
-        b_w_img = rgb_img.convert('L')
-        b_w_train_images[i] = b_w_img
-
-    b_w_train_images = b_w_train_images.reshape((b_w_train_images.shape[0], b_w_train_images.shape[1]*b_w_train_images.shape[2]))
-
-    scaler_model = MinMaxScaler()
-    x = scaler_model.fit_transform(b_w_train_images)
-
-    pca = PCA()
-    transformed_images = pca.fit_transform(x)
-    reduced_pca = np.matmul(x.T, transformed_images)
-    reduced_images = reduced_pca.T
-
-    scaler_model1 = MinMaxScaler()
-    x = np.trunc(scaler_model1.fit_transform(reduced_images)*255)
-
-    rescaled_images = x.reshape(x.shape[0], 128, 128)
-
-
-    return rescaled_images.astype('uint8')
 
 
 if __name__ == '__main__':
@@ -144,8 +117,8 @@ if __name__ == '__main__':
     #rgb_images = train_images
 
     dim = train_images.shape[1]
-
-    new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, dim=dim, save_dir=contour_save_dir, input_type='rgb')
+    num_classes = 7
+    new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, dim=dim, save_dir=contour_save_dir, input_type='rgb', num_classes=num_classes)
     #reduced_train_images = pca_reduced_images(train_images)
     #new_images, new_labels, new_yolo_labels = retrieve_contoured_images(reduced_train_images, save_dir=contour_save_dir, input_type=input_type)
 

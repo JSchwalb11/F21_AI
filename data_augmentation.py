@@ -2,6 +2,9 @@ import PIL
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
+import cupy as cp
 from torchvision import transforms
 
 
@@ -83,6 +86,7 @@ def flip_rotate(images, rotate=[0], input_type='rgb'):
     # rotate = [0]
 
     permutations = len(flip_x) * len(flip_y) * len(rotate)
+    print("Data Augmentation: {0}x".format(permutations))
 
     if input_type =='b/w':
         aug_images = np.zeros((images.shape[0] * permutations, images.shape[1], images.shape[2]),
@@ -133,7 +137,7 @@ def flip_rotate(images, rotate=[0], input_type='rgb', aug_yolo=False, yolo_data=
     flip_x = [False, True]
     flip_y = [False, True]
     # rotate = [0, 90, 180, 270]
-    # rotate = [0, 90]
+    rotate = [0, 90]
     # rotate = [0]
 
     permutations = len(flip_x) * len(flip_y) * len(rotate)
@@ -174,5 +178,63 @@ def generate_labels(aug_images, num_classes):
         aug_labels[slice * i: slice * (i + 1)] = i
 
     return aug_labels
+
+def pca_reduced_images(train_images, num_components, plot=False):
+    """
+
+    :param train_images: numpy array (num_images, dim1, dim2)
+    :return: flattened, reduced, transformed into n components
+    """
+
+
+    flattened_images = train_images.reshape(
+        (train_images.shape[0], train_images.shape[1]*train_images.shape[2])
+    )
+
+    scaler_model = MinMaxScaler()
+    x = scaler_model.fit_transform(flattened_images)
+
+    if num_components is None:
+        pca = PCA()
+    else:
+        pca = PCA(n_components=num_components)
+
+    transformed_images = pca.fit_transform(x)
+    #cp_x = cp.asarray(x)
+    #cp_transformed_images = cp.asarray(transformed_images)
+
+    #reduced_transformed_pca = cp.matmul(cp_x.T, cp_transformed_images.T)
+    #reduced_transformed_images = reduced_transformed_pca.T
+
+    evr = pca.explained_variance_ratio_
+    cum_sum = np.cumsum(evr)
+
+    if plot is True:
+        components = 0
+        for i, val in enumerate(cum_sum):
+            if val > 0.99:
+                components = i
+                print("{0} components for 0.99 Cumulative Explained Variance".format(i))
+                break
+
+        plt.figure()
+        title = 'CumSum of PCA Components'
+        print('CumSum of PCA Components' + str(cum_sum))
+        plt.plot(cum_sum)
+        plt.plot(components, cum_sum[components], marker="*")
+        plt.xlabel('Number of components')
+        plt.ylabel('Cumulative explained variance')
+        plt.title(title)
+        plt.show()
+
+
+    #scaler_model1 = MinMaxScaler()
+    #x = np.trunc(scaler_model1.fit_transform(reduced_images)*255)
+
+    #rescaled_images = x.reshape(x.shape[0], 128, 128)
+
+
+    #return rescaled_images.astype('uint8')
+    return transformed_images[:5625]
 
 

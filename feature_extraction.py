@@ -38,3 +38,4 @@ def get_edge(img):
     # edges_img = edges_img / edges_img.max()
 
     return edges_img
+

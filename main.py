@@ -8,6 +8,7 @@ from pygments.lexers import graphviz
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 import argparse
+from data_augmentation import pca_reduced_images
 from sklearn import tree
 from sklearn.naive_bayes import GaussianNB
 from sklearn import svm
@@ -27,6 +28,10 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.pipeline import Pipeline
 from Prototyping import prototype
+
+import wandb
+
+wandb.init(project="my-test-project", entity="jschwalb")
 
 
 
@@ -58,173 +63,83 @@ if __name__ == '__main__':
         print("Lengths do not match, check data loader")
         sys.exit(0)
 
-    num_classes = 6
+    num_classes = 7
     dim = aug_images.shape[1]
     input_type = 'b/w'
-    BATCH_SIZE = 30
-    EPOCHS = 15
+    BATCH_SIZE = 32
+    EPOCHS = 10
+    LEARNING_RATE = 0.001
+    train_sizes = np.arange(0.1,0.2,0.1)
     max_idx = aug_images.shape[0]
 
-    """c3 = aug_images[13816:max_idx-100]
-    c3_labels = aug_labels[13816:max_idx-100]
-    c3_val = aug_images[max_idx-100:]
-    c3_val_labels = aug_labels[max_idx-100:]
-
-    fig, axes = plt.subplots(1,2,figsize=(12,5))
-
-    axes[0].imshow(c3[0])
-
-    proto = prototype(c3)
-    axes[1].imshow(proto)
-    plt.show()"""
-
-    """c0 = aug_images[:100]
-    c0_labels = aug_labels[:100]
-    c0_val = aug_images[100:110]
-    c0_val_labels = aug_labels[100:110]
-
-    c1 = aug_images[5521:5621]
-    c1_labels = aug_labels[5521:5621]
-    c1_val = aug_images[5621:5631]
-    c1_val_labels = aug_labels[100:110]
-
-    c2 = aug_images[9879:9979]
-    c2_labels = aug_labels[9879:9979]
-    c2_val = aug_images[9979:9989]
-    c2_val_labels = aug_labels[9979:9989]
-
-    c3 = aug_images[13816:13916]
-    c3_labels = aug_labels[13816:13916]
-    c3_val = aug_images[13916:13926]
-    c3_val_labels = aug_labels[13916:13926]
-
-    sample = np.concatenate((c0,c1,c2,c3))
-    sample_labels = np.concatenate((c0_labels,c1_labels,c2_labels,c3_labels))
-
-    c0 = c0.reshape((100, 128*128))
-    c0_val = c0_val.reshape((10, 128*128))
-    c1_val = c1_val.reshape((10, 128*128))"""
-
-    #clf = BaggingClassifier(n_estimators = 3, random_state = 0).fit(c0, c0_labels)
-    #a = clf.predict(c1_val)
-
-
-    #X, y = aug_images.reshape((aug_images.shape[0], 128*128)) , aug_labels
-    """X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=0.3, random_state=42)
-    classifier = BaggingClassifier(n_estimators=3, random_state=0).fit(X_train, y_train)
-
-
-    estimator=Pipeline([("scaler", MinMaxScaler()), ("classifier", classifier)])
-    estimator.fit(X_train, y_train)
-
-    #estimator.predict(test_images)
-
-    train_score = estimator.score(X_train, y_train) * 100
-    test_score = estimator.score(X_test, y_test) * 100"""
+    wandb.config = {
+        "learning_rate": LEARNING_RATE,
+        "epochs": EPOCHS,
+        "batch_size": BATCH_SIZE
+    }
 
     X, y = aug_images.reshape((aug_images.shape[0], 128, 128)) , aug_labels
 
-
-
-    fig, axes = plt.subplots(1,2,figsize=(12,5))
-
-
-
     """
-    classifier_labels = {
-        "SVM - Poly": (svm.SVC(kernel='poly', random_state=1), "yellow"),
-        "SVM - RBF": (svm.SVC(kernel='rbf', random_state=1), "orange"),
-        "kNN": (KNeighborsClassifier(n_neighbors=5), "purple"),
-        "Gaussian Naive Bayes": (GaussianNB(), "lime"),
-        "LDA": (LinearDiscriminantAnalysis(), "red"),
-        "DTree": (tree.DecisionTreeClassifier(), "cyan")#,
-    }
-    for label in classifier_labels:
-        classifier = classifier_labels[label][0]
-        color = classifier_labels[label][1]
-        train_scores, test_scores = models.plot_learning_curve(classifier, X, y, label=label, color=color, axes=axes)
+    X_pca = pca_reduced_images(X, num_components=None, plot=False)
+    X_pca = X_pca.transpose()
+    X_pca = X_pca.reshape((X_pca.shape[0], 75, 75))
+    X_pca = (255 * (X_pca - np.min(X_pca)) / np.ptp(X_pca)).astype(int)
     """
-    cnn_train_scores, cnn_test_scores = models.plot_cnn_learning_curve(images=X,
-                                                                       labels=y,
-                                                                       dim=dim,
-                                                                       train_sizes=np.arange(0.1, 0.7, 0.1),
-                                                                       num_classes=num_classes,
-                                                                       BATCH_SIZE=BATCH_SIZE,
-                                                                       EPOCHS=EPOCHS,
-                                                                       label="Alexnet (B: {0} E: {1})\n".format(BATCH_SIZE,
-                                                                                                              EPOCHS),
-                                                                       axes=axes,
-                                                                       color='b')
 
-    axes[0].set_xlabel("% of Training Examples")
-    axes[0].set_ylabel("Overall Classification Accuracy")
-    axes[0].set_title('Model evaluation - Validation accuracy')
-    axes[0].legend()
+    #datasets = [(X, 128, "contour analysis"), (X_pca, 75, "PCA Analysis")]
+    datasets = [(X, 128, "contour analysis")]
+    for item in datasets:
+        fig, axes = plt.subplots(2, 1, figsize=(9, 10))
 
-    axes[1].set_xlabel("% of Training Examples")
-    axes[1].set_ylabel("Training/Recall Accuracy")
-    axes[1].set_title("Model Evaluation - Training Accuracy")
-    fig.suptitle("Alexnet (B: {0} E: {1})".format(BATCH_SIZE, EPOCHS))
-    axes[1].legend()
-    plt.savefig("Alexnet: 6 classes")
-    plt.show()
+        """classifier_labels = {
+            "SVM - Poly": (svm.SVC(kernel='poly', random_state=1), "yellow"),
+            "SVM - RBF": (svm.SVC(kernel='rbf', random_state=1), "orange"),
+            "kNN": (KNeighborsClassifier(n_neighbors=5), "purple"),
+            "Gaussian Naive Bayes": (GaussianNB(), "lime"),
+            "LDA": (LinearDiscriminantAnalysis(), "red"),
+            "DTree": (tree.DecisionTreeClassifier(), "cyan")#,
+        }
+        for label in classifier_labels:
+            classifier = classifier_labels[label][0]
+            color = classifier_labels[label][1]
+            train_scores, test_scores = models.plot_learning_curve(classifier,
+                                                                   item[0],
+                                                                   y,
+                                                                   train_sizes=train_sizes,
+                                                                   label=label,
+                                                                   color=color,
+                                                                   axes=axes,
+                                                                   datatype=item[2])"""
+
+        cnn_train_scores, cnn_test_scores = models.plot_cnn_learning_curve(images=item[0],
+                                                                           labels=y,
+                                                                           dim=item[1],
+                                                                           train_sizes=train_sizes,
+                                                                           num_classes=num_classes,
+                                                                           BATCH_SIZE=BATCH_SIZE,
+                                                                           EPOCHS=EPOCHS,
+                                                                           wandb=None,
+                                                                           label="Alexnet (B: {0} E: {1})\n".format(BATCH_SIZE,
+                                                                                                                  EPOCHS),
+                                                                           axes=axes,
+                                                                           color='b')
+
+        axes[0].set_xlabel("% of Training Examples")
+        axes[0].set_ylabel("Overall Classification Accuracy")
+        axes[0].set_title('Model evaluation - Validation accuracy')
+
+        axes[1].set_xlabel("% of Training Examples")
+        axes[1].set_ylabel("Training/Recall Accuracy")
+        axes[1].set_title("Model Evaluation - Training Accuracy")
+        fig.suptitle("Alexnet trained on {0}".format(item[2]))
+        fig.legend(bbox_to_anchor=(1.3, 0.6))
+        fig.tight_layout()
+        plt.savefig("Alexnet: {0} classes".format(num_classes))
+        plt.show()
 
 
-    """
-    # Run below tonight
-    colors = ['r', 'b', 'g', 'y', 'p', 'black', 'olive']
-    min_batch = 5
-    max_batch = 50
-    min_epoch = 5
-    max_epoch = 50
-    step = 5
-    train_sizes = np.arange(0.1, 0.6, 0.1)
-    batch_sizes = np.arange(min_batch, max_batch+1, step)
-    epoch_sizes = np.arange(min_epoch, max_epoch+1, step)
-    hyperparams = {'batch': 0, 'epoch': 0, 'val_acc': 0}
-    start = now()
-    print("Starting Search")
-    for i, EPOCH in enumerate(epoch_sizes):
-        for j, BATCH in enumerate(batch_sizes):
-            fig, axes = plt.subplots(1, 2, figsize=(12, 8))
 
-            cnn_train_scores, cnn_test_scores = models.plot_cnn_learning_curve(images=X,
-                                                                    labels=y,
-                                                                    dim=dim,
-                                                                    train_sizes=train_sizes,
-                                                                    num_classes=num_classes,
-                                                                    BATCH_SIZE=BATCH,
-                                                                    EPOCHS=EPOCH,
-                                                                    label="Alexnet (B: {0} E: {1})".format(BATCH, EPOCH),                                                                axes=axes,
-                                                                    color=colors[i])
-            best_acc = np.asarray(cnn_test_scores).max()
-
-            if best_acc > hyperparams['val_acc']:
-                hyperparams['batch'] = BATCH
-                hyperparams['epoch'] = EPOCH
-                hyperparams['val_acc'] = best_acc
-
-            axes[0].set_xlabel("% of Training Examples")
-            axes[0].set_ylabel("Overall Classification Accuracy")
-            axes[0].set_title('Model evaluation - Validation accuracy')
-            axes[0].legend()
-
-            axes[1].set_xlabel("% of Training Examples")
-            axes[1].set_ylabel("Training/Recall Accuracy")
-            axes[1].set_title("Model Evaluation - Training Accuracy")
-            fig.suptitle("Hyperparameter Search\nBATCH_SIZE: {0}, EPOCHS: {1}".format(BATCH, EPOCH))
-            axes[1].legend()
-            plt.savefig("Hyperparameter Search BATCH_SIZE-{0} EPOCHS-{1}".format(BATCH, EPOCH))
-    end = now()
-    time_elapsed = end-start
-    print("Searched for hyperparameters within bounds:" +
-          "\nMin Batch Size: {0}\nMax Batch Size: {1}\nMin Epoch Size: {2}\nMax Epoch Size: {3}\nStep: {4}".format(
-              min_batch, max_batch, min_epoch, max_epoch, step))
-    print("\nFound: {0}\n".format(hyperparams))
-    print("Time elapsed: {0}".format(time_elapsed))
-    """
-    # Run above tonight
     """X = X.reshape(X.shape[0], X.shape[1] * X.shape[2])
     train_images, test_images, train_labels, test_labels = train_test_split(
         X, y, train_size=0.3, random_state=42)
