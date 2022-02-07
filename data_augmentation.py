@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import torch
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
-import cupy as cp
 from torchvision import transforms
+import math
+import pandas as pd
 
 
 def imSave(img, filename):
@@ -136,8 +137,8 @@ def flip_rotate(images, rotate=[0], input_type='rgb', aug_yolo=False, yolo_data=
 
     flip_x = [False, True]
     flip_y = [False, True]
-    # rotate = [0, 90, 180, 270]
-    rotate = [0, 90]
+    rotate = [0, 90, 180, 270]
+    #rotate = [0, 90]
     # rotate = [0]
 
     permutations = len(flip_x) * len(flip_y) * len(rotate)
@@ -209,14 +210,21 @@ def pca_reduced_images(train_images, num_components, plot=False):
     evr = pca.explained_variance_ratio_
     cum_sum = np.cumsum(evr)
 
-    if plot is True:
-        components = 0
-        for i, val in enumerate(cum_sum):
-            if val > 0.99:
-                components = i
-                print("{0} components for 0.99 Cumulative Explained Variance".format(i))
-                break
+    components = 0
+    for i, val in enumerate(cum_sum):
+        if val > 0.99:
+            components = i
+            print("{0} components for 0.99 Cumulative Explained Variance".format(i))
+            break
 
+    img_dim = math.sqrt(components).__trunc__()
+
+    if (img_dim+1)**2 > transformed_images.shape[0]:
+        img_dim = img_dim
+    else:
+        img_dim = img_dim + 1
+
+    if plot is True:
         plt.figure()
         title = 'CumSum of PCA Components'
         print('CumSum of PCA Components' + str(cum_sum))
@@ -227,14 +235,9 @@ def pca_reduced_images(train_images, num_components, plot=False):
         plt.title(title)
         plt.show()
 
+    #df = pd.DataFrame(transformed_images.T)
+    #selected_components = df.values[:][:img_dim*img_dim]
 
-    #scaler_model1 = MinMaxScaler()
-    #x = np.trunc(scaler_model1.fit_transform(reduced_images)*255)
-
-    #rescaled_images = x.reshape(x.shape[0], 128, 128)
-
-
-    #return rescaled_images.astype('uint8')
-    return transformed_images[:5625]
+    return transformed_images[:, :img_dim*img_dim], img_dim
 
 

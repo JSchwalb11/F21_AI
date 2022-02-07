@@ -117,7 +117,7 @@ if __name__ == '__main__':
     #rgb_images = train_images
 
     dim = train_images.shape[1]
-    num_classes = 7
+    num_classes = 4
     new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, dim=dim, save_dir=contour_save_dir, input_type='rgb', num_classes=num_classes)
     #reduced_train_images = pca_reduced_images(train_images)
     #new_images, new_labels, new_yolo_labels = retrieve_contoured_images(reduced_train_images, save_dir=contour_save_dir, input_type=input_type)

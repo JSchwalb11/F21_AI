@@ -1,34 +1,11 @@
 import pickle
 import sys
-import cv2
 import numpy as np
-from PIL import Image
-import tensorflow as tf
-from pygments.lexers import graphviz
-from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 import argparse
 from data_augmentation import pca_reduced_images
-from sklearn import tree
-from sklearn.naive_bayes import GaussianNB
-from sklearn import svm
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.preprocessing import MinMaxScaler
-
 import models
-from time import time as now
-
-import xgboost as xgb
-from matplotlib.pylab import rcParams
-import pandas as pd
-
-from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import BaggingClassifier
-from sklearn.pipeline import Pipeline
 from Prototyping import prototype
-
 import wandb
 
 wandb.init(project="my-test-project", entity="jschwalb")
@@ -63,10 +40,10 @@ if __name__ == '__main__':
         print("Lengths do not match, check data loader")
         sys.exit(0)
 
-    num_classes = 7
+    num_classes = 4
     dim = aug_images.shape[1]
     input_type = 'b/w'
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     EPOCHS = 10
     LEARNING_RATE = 0.001
     train_sizes = np.arange(0.1,0.2,0.1)
@@ -80,15 +57,14 @@ if __name__ == '__main__':
 
     X, y = aug_images.reshape((aug_images.shape[0], 128, 128)) , aug_labels
 
-    """
-    X_pca = pca_reduced_images(X, num_components=None, plot=False)
-    X_pca = X_pca.transpose()
-    X_pca = X_pca.reshape((X_pca.shape[0], 75, 75))
+    X_pca, img_dim = pca_reduced_images(X, num_components=None, plot=True)
+    print("PCA Img Dimensions: {0}x{1}".format(img_dim, img_dim))
+    #X_pca = X_pca.transpose()
+    #X_pca = X_pca.reshape((X_pca.shape[0], 75, 75))
     X_pca = (255 * (X_pca - np.min(X_pca)) / np.ptp(X_pca)).astype(int)
-    """
 
-    #datasets = [(X, 128, "contour analysis"), (X_pca, 75, "PCA Analysis")]
-    datasets = [(X, 128, "contour analysis")]
+    datasets = [(X, 128, "contour analysis", False), (X_pca, img_dim, "contour + PCA Analysis", True)]
+    #datasets = [(X, 128, "contour analysis")]
     for item in datasets:
         fig, axes = plt.subplots(2, 1, figsize=(9, 10))
 
@@ -119,11 +95,11 @@ if __name__ == '__main__':
                                                                            num_classes=num_classes,
                                                                            BATCH_SIZE=BATCH_SIZE,
                                                                            EPOCHS=EPOCHS,
-                                                                           wandb=None,
                                                                            label="Alexnet (B: {0} E: {1})\n".format(BATCH_SIZE,
                                                                                                                   EPOCHS),
                                                                            axes=axes,
-                                                                           color='b')
+                                                                           color='b',
+                                                                           small_input=item[3])
 
         axes[0].set_xlabel("% of Training Examples")
         axes[0].set_ylabel("Overall Classification Accuracy")

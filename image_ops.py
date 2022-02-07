@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 import math
+from matplotlib import pyplot as plt
 
 def coords_top_left_to_center(x_tl, y_tl, w, h):
     x_center = x_tl + (w/2)
