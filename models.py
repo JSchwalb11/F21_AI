@@ -127,9 +127,13 @@ def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy
 
     return model
 
-def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1), label="", color='r', axes=None, small_input=False):
+def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS, train_sizes=np.arange(0.1,0.6,0.1),
+                            label="", color='r', axes=None, small_input=False, rgb=False):
     #images = images.reshape((images.shape[0], images.shape[1], images.shape[2], 1))
-    images = images.reshape((images.shape[0], dim, dim))
+    if rgb == False:
+        images = images.reshape((images.shape[0], dim, dim, 1))
+    else:
+        images = images.reshape((images.shape[0], dim, dim, 3))
 
     train_scores = []
     test_scores = []
@@ -140,11 +144,14 @@ def plot_cnn_learning_curve(images, labels, dim, num_classes, BATCH_SIZE, EPOCHS
         train_labels = to_categorical(train_labels)
         test_labels = to_categorical(test_labels)
 
-        print("Train size {0} images".format(len(train_images)))
-        print("Train size {0} bytes".format(sys.getsizeof(train_images)))
+        print("Train size {0} images ({1} train_size)".format(len(train_images), train_size))
+        print("Train size {0} bytes ({1} train_size)".format(sys.getsizeof(train_images), train_size))
         print("Test size {0} images".format(len(test_images)))
         print("Test size {0} bytes".format(sys.getsizeof(test_images)))
-        model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=False, small_input=small_input)
+        if rgb == False:
+            model = Alexnet_bw_input(dim=dim, num_classes=num_classes, SHAP=False, small_input=small_input)
+        else:
+            model = Alexnet(dim=dim, num_classes=num_classes)
 
         #model = Alexnet(dim=dim, num_classes=num_classes)
 

@@ -1,13 +1,9 @@
-import numpy as np
 from PIL import Image
 import os
 import numpy as np
-import pandas as pd
 import pickle
-from sklearn.decomposition import PCA
-from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+
 
 
 
@@ -98,38 +94,105 @@ def retrieve_contoured_images(train_images, save_dir, input_type, dim, num_class
 
 if __name__ == '__main__':
     data_dir = "C:\\Data\\Latest"
-    #test_data_dir = "C:\\Data\\TestingDir"
-    #data_dir = "C:\\Data\\Latest - Old"
     contour_save_dir = "C:\\Data\\Contours\\"
     pca_save_dir = "C:\\Data\\PCA\\"
 
     input_type = 'b/w'
     #input_type = 'rgb'
 
-    aug_data_pickle = "aug_data.pkl"
-    rgb_data_pickle = "rgb_data.pkl"
-    aug_labels_pickle = "aug_labels.pkl"
-    yolo_labels_pickle = "yolo_labels.pkl"
-
-
+    num_classes = 7
 
     train_images = np.asarray(get_train_data(dir_path=data_dir))
-    #rgb_images = train_images
+    train_labels = data_augmentation.generate_labels(train_images, num_classes=num_classes)
 
     dim = train_images.shape[1]
-    num_classes = 4
-    new_images, new_labels, new_yolo_labels = retrieve_contoured_images(train_images, dim=dim, save_dir=contour_save_dir, input_type='rgb', num_classes=num_classes)
-    #reduced_train_images = pca_reduced_images(train_images)
-    #new_images, new_labels, new_yolo_labels = retrieve_contoured_images(reduced_train_images, save_dir=contour_save_dir, input_type=input_type)
 
+    contour_images, contour_labels, yolo_labels = retrieve_contoured_images(train_images,
+                                                                        dim=dim,
+                                                                        save_dir=contour_save_dir,
+                                                                        input_type='rgb',
+                                                                        num_classes=num_classes)
+    """X_pca, img_dim = data_augmentation.pca_reduced_images(np.asarray(contour_images),
+                                                          num_components=None,
+                                                          plot=False)"""
+
+    """train_contour, test_contour, train_labels_contour, test_labels_contour = train_test_split(
+        np.asarray(contour_images), np.asarray(contour_labels), train_size=0.1, random_state=42)
+
+    train_rgb, test_rgb, train_labels_rgb, test_labels_rgb = train_test_split(
+        np.asarray(train_images), np.asarray(train_labels), train_size=0.1, random_state=42)"""
+
+    """pickle_files = ["aug_data.pkl",
+                    "aug_labels.pkl",
+                    "aug_test_data.pkl",
+                    "aug_test_labels.pkl",
+                    "rgb_data.pkl",
+                    "rgb_labels.pkl",
+                    "rgb_test_data.pkl",
+                    "rgb_test_labels.pkl",
+                    "pca_data.pkl",
+                    "yolo_labels.pkl"]
+
+    pickle_outfiles = []
+    for file in pickle_files:
+        pickle_outfiles.append(open(file, 'wb'))
+
+    data_to_write = [train_contour,
+                     train_labels_contour,
+                     test_contour,
+                     test_labels_contour,
+                     train_rgb,
+                     train_labels_rgb,
+                     test_rgb,
+                     test_labels_rgb,
+                     X_pca,
+                     yolo_labels]
+
+    for i, outfile in enumerate(pickle_outfiles):
+        pickle.dump(data_to_write[i], outfile)"""
+
+
+    aug_data_pickle = "aug_data.pkl"
+    aug_labels_pickle = "aug_labels.pkl"
+    aug_test_data_pickle = "aug_test_data.pkl"
+    aug_test_labels_pickle = "aug_test_labels.pkl"
+
+    rgb_data_pickle = "rgb_data.pkl"
+    rgb_labels_pickle = "rgb_labels.pkl"
+    rgb_test_data_pickle = "rgb_test_data.pkl"
+    rgb_test_labels_pickle = "rgb_test_labels.pkl"
+
+    pca_data_pickle = "pca_data.pkl"
+    pca_test_data_pickle = "pca_test_data.pkl"
+
+    yolo_labels_pickle = "yolo_labels.pkl"
+    
     aug_data_outfile = open(aug_data_pickle, 'wb')
     aug_labels_outfile = open(aug_labels_pickle, 'wb')
-    #rgb_data_outfile = open(rgb_data_pickle, 'wb')
+    aug_test_data_outfile = open(aug_test_data_pickle, 'wb')
+    aug_test_labels_outfile = open(aug_test_labels_pickle, 'wb')
+
+    rgb_data_outfile = open(rgb_data_pickle, 'wb')
+    rgb_labels_outfile = open(rgb_labels_pickle, 'wb')
+    rgb_test_data_outfile = open(rgb_test_data_pickle, 'wb')
+    rgb_test_labels_outfile = open(rgb_test_labels_pickle, 'wb')
+
+    pca_data_outfile = open(pca_data_pickle, 'wb')
+
     yolo_labels_outfile = open(yolo_labels_pickle, 'wb')
 
-    pickle.dump(new_images, aug_data_outfile)
-    pickle.dump(new_labels, aug_labels_outfile)
-    pickle.dump(new_yolo_labels, yolo_labels_outfile)
-    #pickle.dump(rgb_images, rgb_data_outfile)
+    pickle.dump(contour_images, aug_data_outfile)
+    pickle.dump(contour_labels, aug_labels_outfile)
+    #pickle.dump(test_contour, aug_test_data_outfile)
+    #pickle.dump(test_labels_contour, aug_test_labels_outfile)
 
-    #pickle.dump(edge_images, edge_outfile)
+    pickle.dump(train_images, rgb_data_outfile)
+    pickle.dump(train_labels, rgb_labels_outfile)
+    #pickle.dump(test_rgb, rgb_test_data_outfile)
+    #pickle.dump(test_labels_rgb, rgb_test_labels_outfile)
+
+    #pickle.dump(X_pca, pca_data_outfile)
+
+    pickle.dump(yolo_labels, yolo_labels_outfile)
+
+
