@@ -102,6 +102,15 @@ if __name__ == '__main__':
 
     num_classes = 7
 
+    for i in range(0, num_classes):
+        path = os.path.join(contour_save_dir, str(i))
+
+        try:
+            os.mkdir(path)
+            print("Created Directory")
+        except OSError as error:
+            print("Directory Already Exists")
+
     train_images = np.asarray(get_train_data(dir_path=data_dir))
     train_labels = data_augmentation.generate_labels(train_images, num_classes=num_classes)
 
@@ -112,6 +121,12 @@ if __name__ == '__main__':
                                                                         save_dir=contour_save_dir,
                                                                         input_type='rgb',
                                                                         num_classes=num_classes)
+    tmp = 0
+    for i, label in enumerate(train_labels):
+        if label != tmp:
+            print("New class at idx {0}".format(i))
+            tmp = label
+
     """X_pca, img_dim = data_augmentation.pca_reduced_images(np.asarray(contour_images),
                                                           num_components=None,
                                                           plot=False)"""
