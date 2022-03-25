@@ -1,4 +1,7 @@
 import tensorflow as tf
+import torch
+from vit_pytorch import ViT
+
 from tensorflow.keras.utils import to_categorical
 from time import time as now
 from sklearn.model_selection import train_test_split
@@ -118,6 +121,25 @@ def Alexnet_bw_input(dim, num_classes, activation='relu', optimizer='adam', loss
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     return model
+
+def ViTransformer(dim, num_classes, num_channel):
+    v = ViT(
+        image_size=dim,
+        patch_size=32,
+        num_classes=num_classes,
+        dim=1024,
+        depth=6,
+        heads=16,
+        mlp_dim=2048,
+        dropout=0.1,
+        emb_dropout=0.1,
+        channels=num_channel
+    )
+    device = torch.device("cpu")
+    v.to(device)
+    v.eval()
+
+    return v
 
 
 def Imagenet(dim, activation='relu', optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']):
